@@ -51,3 +51,6 @@ const vuetify = createVuetify({
 })
 
 createApp(App).use(router).use(vuetify).mount('#app');
+
+
+
