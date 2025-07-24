@@ -77,5 +77,5 @@ const handleLogout = async () => {
 </script>
 
 <style scoped>
-/* You can add global styles here later */
+/* Optional styles for the bottom navigation */
 </style>
