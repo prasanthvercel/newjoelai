@@ -32,8 +32,8 @@ const currentUtterance = ref('');
 let recognition = null;
 let synthesis = window.speechSynthesis;
 
-const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
-const OPENAI_API_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
+const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
+const GROQ_API_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
 
 let history = [
   { role: 'system', content: 'You are a helpful assistant who speaks clearly and concisely.' }
@@ -88,14 +88,14 @@ async function sendToAI(text) {
   history.push({ role: 'user', content: text });
 
   try {
-    const res = await fetch(OPENAI_API_ENDPOINT, {
+    const res = await fetch(GROQ_API_ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${GROQ_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
+        model: 'meta-llama/llama-4-scout-17b-16e-instruct',
         messages: history,
       })
     });
@@ -105,7 +105,7 @@ async function sendToAI(text) {
     history.push({ role: 'assistant', content: reply });
     speakReply(reply);
   } catch (err) {
-    console.error('API error:', err);
+    console.error('GROQ API error:', err);
     speakReply('Sorry, I encountered an error.');
   }
 }
