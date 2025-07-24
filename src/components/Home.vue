@@ -23,7 +23,8 @@ const handleLogout = async () => {
 };
 </script>
 
-<style scoped>
+<style>
+/* Removed 'scoped' attribute */
 .home-container {
   display: flex;
   flex-direction: column;
