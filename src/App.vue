@@ -1,7 +1,20 @@
 <template>
-  <div class="bg-red-500">
-    <router-view />
-  </div>
+  <v-app>
+    <v-app-bar app color="white" elevation="1">
+      <v-container class="d-flex align-center">
+        <v-avatar size="40" rounded="circle">
+          <v-img src="/logo.png" alt="Logo"></v-img>
+        </v-avatar>
+        <v-toolbar-title class="ml-3">Your App Name</v-toolbar-title>
+        <v-spacer></v-spacer>
+        <!-- Navigation links can go here -->
+      </v-container>
+    </v-app-bar>
+
+    <v-main>
+      <router-view />
+    </v-main>
+  </v-app>
 </template>
 
 <script setup>
