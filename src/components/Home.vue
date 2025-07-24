@@ -7,7 +7,7 @@
       :class="{ 'speaking-gradient': isSpeaking, 'listening-gradient': isListening, 'idle-gradient': !isSpeaking && !isListening, 'animate-gradient': isSpeaking }"
     >
       <!-- Icon inside the circle -->
-      <v-icon size="80" color="white">{{ isSpeaking ? 'mdi-volume-high' : 'mdi-microphone' }}</v-icon>
+      <v-icon size="80" color="red">{{ isSpeaking ? 'mdi-volume-high' : 'mdi-microphone' }}</v-icon>
     </div>
 
     <!-- Bottom Controls -->
