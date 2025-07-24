@@ -1,13 +1,22 @@
 <template>
   <v-container fluid class="fill-height d-flex flex-column justify-center align-center app-background pa-0">
 
-    <!-- Central Gradient Circle -->
+    <!-- Central Content Area (for current spoken line) -->
     <div
-      class="gradient-circle d-flex justify-center align-center elevation-10"
-      :class="{ 'speaking-gradient': isSpeaking, 'listening-gradient': isListening, 'idle-gradient': !isSpeaking && !isListening, 'animate-gradient': isSpeaking }"
+      class="central-content d-flex flex-column justify-center align-center elevation-5"
+      :class="{ 'speaking-state': isSpeaking, 'listening-state': isListening }"
     >
-      <!-- Icon inside the circle (This icon can still change based on state if you like) -->
-      <v-icon size="80" color="white">{{ isSpeaking ? 'mdi-volume-high' : 'mdi-microphone' }}</v-icon>
+      <!-- Display current spoken line -->
+      <div v-if="currentUtterance" class="spoken-text">
+        {{ currentUtterance }}
+      </div>
+      <div v-else class="placeholder-text">
+        {{ isListening ? 'Listening...' : (isSpeaking ? 'Speaking...' : 'Tap the microphone to start') }}
+      </div>
+
+       <!-- Optional: Add a simple visualizer here (waveform/bars) -->
+       <!-- You would need a library or custom implementation for this -->
+
     </div>
 
     <!-- Bottom Controls -->
@@ -56,10 +65,11 @@ import { ref, onMounted, onBeforeUnmount } from 'vue';
 
 const isListening = ref(false);
 const isSpeaking = ref(false);
+const currentUtterance = ref(''); // To display the current spoken line
 
 let recognition = null;
 let synthesis = null;
-let conversationHistory = []; // Array to store conversation context for API
+let conversationHistory = []; // Array to store conversation context for API (kept for API context)
 
 // Accessing OpenAI API Key from environment variables
 // ** WARNING: NOT SECURE FOR PRODUCTION WITH API KEYS IN FRONTEND **
@@ -82,6 +92,7 @@ function initSpeechRecognition() {
   recognition.onstart = () => {
     isListening.value = true;
     isSpeaking.value = false; // Not speaking when listening starts
+    currentUtterance.value = ''; // Clear previous utterance
     console.log('Speech recognition started.');
   };
 
@@ -97,11 +108,15 @@ function initSpeechRecognition() {
       }
     }
 
-    // You can use interimTranscript for real-time visualization feedback if needed
-    // console.log('Interim:', interimTranscript);
-    console.log('Final:', finalTranscript);
+    // Display interim transcript for immediate feedback (optional)
+    if (interimTranscript) {
+        currentUtterance.value = interimTranscript;
+    }
+
 
     if (finalTranscript) {
+      // Display final transcript
+      currentUtterance.value = finalTranscript;
       // Send final transcript to API
       sendToApi(finalTranscript);
     }
@@ -110,6 +125,7 @@ function initSpeechRecognition() {
   recognition.onerror = (event) => {
     isListening.value = false;
     console.error('Speech recognition error:', event.error);
+    currentUtterance.value = `Error: ${event.error}`; // Display error
     // Handle errors, perhaps display a message or try restarting recognition
      // If an error occurs during continuous listening, you might want to restart
      // Only restart if not currently speaking to avoid conflicts
@@ -171,6 +187,7 @@ const speakText = (text) => {
   utterance.onstart = () => {
       isSpeaking.value = true;
       isListening.value = false; // Not listening when speaking starts
+      currentUtterance.value = text; // Display the AI's response
       console.log('Speaking started.');
   };
 
@@ -186,6 +203,7 @@ const speakText = (text) => {
   utterance.onerror = (event) => {
        isSpeaking.value = false;
        console.error('Text-to-speech error:', event.error);
+       currentUtterance.value = `Speaking Error: ${event.error}`; // Display speaking error
        // Handle speaking errors
        // If speech synthesis fails, you might want to restart listening
       if (recognition && !isListening.value) { // Check if recognition exists and is not already listening
@@ -206,6 +224,7 @@ const startConversation = () => {
     }
     if (recognition && !isListening.value) {
         conversationHistory = [{ role: 'system', content: 'You are a friendly English tutor. Help the user learn and speak English clearly and concisely. Avoid using asterisks or formatting characters.' }]; // Initialize history with system message
+        currentUtterance.value = ''; // Clear previous utterance on start
         recognition.start();
     }
 };
@@ -219,6 +238,7 @@ const stopConversation = () => {
   }
   isListening.value = false;
   isSpeaking.value = false;
+  currentUtterance.value = ''; // Clear current utterance on stop
   conversationHistory = []; // Clear history on conversation end
   console.log('Conversation ended.');
 };
@@ -299,43 +319,43 @@ onBeforeUnmount(() => {
   background: linear-gradient(180deg, #f0f2f5 0%, #e0e5ec 100%); /* Subtle light background */
 }
 
-.gradient-circle {
-  width: 300px;
-  height: 300px;
-  border-radius: 50%;
-  /* More refined gradient placeholders */
-  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); /* Idle: light blues and pinks */
-  transition: background 0.8s ease-in-out; /* Smoother transition */
-  position: relative; /* Needed for potential pseudo-elements for animation */
-  overflow: hidden; /* Hide overflowing animation elements */
+/* Modified central area for displaying text */
+.central-content {
+  width: 80%; /* Adjust width as needed */
+  max-width: 600px; /* Max width for larger screens */
+  min-height: 150px; /* Minimum height */
+  padding: 20px;
+  border-radius: 15px;
+  background-color: rgba(255, 255, 255, 0.9); /* Slightly transparent white */
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2); /* Soft shadow */
+  text-align: center;
+  font-size: 1.2em;
+  color: #333;
+  transition: all 0.3s ease;
+  position: relative; /* Needed for potential animations */
 }
 
-.listening-gradient {
-  background: linear-gradient(135deg, #c471ed 0%, #fcc5e4 100%); /* Listening: purples and pinks */
+.spoken-text {
+  font-weight: 500;
 }
 
-.speaking-gradient {
-  background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%); /* Speaking: blues */
-   /* Animation placeholder for speaking */
-   animation: speaking-pulse 1.5s infinite ease-in-out;
+.placeholder-text {
+  color: #777;
+  font-style: italic;
 }
 
-@keyframes speaking-pulse {
-    0% {
-        transform: scale(1);
-        opacity: 1;
-    }
-    50% {
-        transform: scale(1.05);
-        opacity: 0.9;
-    }
-    100% {
-        transform: scale(1);
-        opacity: 1;
-    }
+/* Visual feedback for states on the central content area */
+.listening-state {
+  border: 2px solid #c471ed; /* Purple border when listening */
+}
+
+.speaking-state {
+  border: 2px solid #66a6ff; /* Blue border when speaking */
+  /* You can add pulse or waveform animations here */
 }
 
 
+/* Bottom Controls */
 .bottom-controls {
   position: absolute;
   bottom: 40px; /* Adjust position as needed */
