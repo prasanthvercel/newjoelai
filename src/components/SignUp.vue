@@ -31,7 +31,7 @@ const router = useRouter();
 
 const validateEmail = (email) => {
   if (!email) return 'Email is required';
-  if (!/^[w-.]+@([w-]+.)+[w-]{2,4}$/.test(email)) return 'Invalid email format';
+  if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+.[a-zA-Z]{2,}$/.test(email)) return 'Invalid email format';
   return '';
 };
 
