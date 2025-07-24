@@ -1,75 +1,50 @@
 <template>
   <v-container fluid class="fill-height d-flex flex-column justify-center align-center pa-0">
-    <!-- Top App Bar (managed by App.vue) -->
 
-    <!-- Main Interaction Area -->
-    <div class="main-interaction-area flex-grow-1 d-flex flex-column justify-center align-center pa-4">
-      <!-- Display Current Sentence -->
-      <div v-if="currentSentence" class="current-sentence text-h6 text-center mb-4">
-        {{ currentSentence }}
-      </div>
-
-      <!-- Visualizer Area -->
-      <div class="visualizer-area d-flex justify-center align-center" style="height: 200px;">
-        <!-- Placeholder for Listening/Speaking Visualizer -->
-        <div v-if="isListening" class="listening-visualizer">
-          <!-- Simple placeholder for listening waves -->
-          <v-icon size="60" color="primary">mdi-microphone</v-icon>
-          <p class="text-caption mt-2">Listening...</p>
-        </div>
-        <div v-else-if="loading || isSpeaking" class="speaking-visualizer">
-          <!-- Simple placeholder for speaking/processing waves -->
-          <v-progress-circular
-            v-if="loading"
-            indeterminate
-            color="primary"
-            size="80"
-            width="8"
-          ></v-progress-circular>
-          <v-icon v-else size="60" color="primary">mdi-volume-high</v-icon>
-           <p class="text-caption mt-2">{{ loading ? 'Processing...' : 'Speaking...' }}</p>
-        </div>
-        <div v-else class="idle-mic">
-           <v-icon size="60" color="grey">mdi-microphone</v-icon>
-           <p class="text-caption mt-2">Tap to speak</p>
-        </div>
-      </div>
+    <!-- Central Gradient Circle -->
+    <div
+      class="gradient-circle d-flex justify-center align-center elevation-5"
+      :class="{ 'speaking-gradient': isSpeaking, 'listening-gradient': isListening, 'idle-gradient': !isSpeaking && !isListening }"
+    >
+      <!-- Icon inside the circle -->
+      <v-icon size="80" color="white">{{ isSpeaking ? 'mdi-volume-high' : 'mdi-microphone' }}</v-icon>
     </div>
 
-    <!-- Bottom Control Area -->
-    <div class="bottom-control-area d-flex justify-center align-center pa-4">
-      <div v-if="!isListening && !loading && !isSpeaking">
-        <!-- Microphone button to start -->
-        <v-btn icon color="primary" size="x-large" @click="toggleListening">
-          <v-icon size="36">mdi-microphone</v-icon>
+    <!-- Bottom Controls -->
+    <div class="bottom-controls d-flex justify-center align-center pa-4">
+      <div v-if="!isListening && !isSpeaking">
+        <!-- Microphone icon to start -->
+        <v-btn icon large @click="startConversation">
+          <v-icon size="48">mdi-microphone</v-icon>
         </v-btn>
       </div>
 
-      <div v-if="isListening || loading || isSpeaking">
-        <!-- End button to stop -->
-        <v-btn color="error" large rounded @click="stopInteraction">End Conversation</v-btn>
+      <div v-else>
+        <!-- Call end icon to stop -->
+        <v-btn icon large color="error" @click="stopConversation">
+          <v-icon size="48">mdi-phone-hangup</v-icon>
+        </v-btn>
       </div>
     </div>
 
-    <!-- Bottom Navigation Bar (managed by App.vue) -->
   </v-container>
 </template>
 
 <script setup>
-import { ref, nextTick, onMounted, onBeforeUnmount } from 'vue';
+import { ref, onMounted, onBeforeUnmount } from 'vue';
 
-const currentSentence = ref('');
-const loading = ref(false);
 const isListening = ref(false);
 const isSpeaking = ref(false);
 
 let recognition = null;
 let synthesis = null;
+let conversationHistory = []; // Array to store conversation context for API
 
-// ** Replace with your actual Gemini API Key (NOT SECURE FOR PRODUCTION)**
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-// ** Hardcoded Gemini API Endpoint for text-based chat**
-const GEMINI_API_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+// Accessing OpenAI API Key from environment variables
+// ** WARNING: NOT SECURE FOR PRODUCTION WITH API KEYS IN FRONTEND **
+const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
+const OPENAI_API_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
+
 
 // Initialize browser speech recognition
 function initSpeechRecognition() {
@@ -79,13 +54,13 @@ function initSpeechRecognition() {
   }
 
   recognition = new webkitSpeechRecognition();
-  recognition.continuous = false;
-  recognition.interimResults = true; // Get interim results to display text while speaking
+  recognition.continuous = true; // Continuous listening
+  recognition.interimResults = true; // Get interim results
   recognition.lang = 'en-IN'; // Attempt to set to Indian English
 
   recognition.onstart = () => {
     isListening.value = true;
-    currentSentence.value = ''; // Clear previous sentence
+    isSpeaking.value = false; // Not speaking when listening starts
     console.log('Speech recognition started.');
   };
 
@@ -101,8 +76,9 @@ function initSpeechRecognition() {
       }
     }
 
-    currentSentence.value = finalTranscript || interimTranscript; // Display final or interim transcript
-    console.log('Transcript:', currentSentence.value);
+    // You can use interimTranscript for real-time visualization feedback if needed
+    // console.log('Interim:', interimTranscript);
+    console.log('Final:', finalTranscript);
 
     if (finalTranscript) {
       // Send final transcript to API
@@ -113,14 +89,20 @@ function initSpeechRecognition() {
   recognition.onerror = (event) => {
     isListening.value = false;
     console.error('Speech recognition error:', event.error);
-    currentSentence.value = 'Error listening. Tap to try again.';
+    // Handle errors, perhaps display a message or try restarting recognition
+     // If an error occurs during continuous listening, you might want to restart
+    if (!isSpeaking.value) {
+       // recognition.start(); // Auto-restart for continuous
+    }
   };
 
   recognition.onend = () => {
     isListening.value = false;
     console.log('Speech recognition ended.');
-    if (!loading.value && !currentSentence.value) {
-        currentSentence.value = 'No speech detected. Tap to speak.';
+    // Recognition might end unexpectedly, you might want to restart it
+    // if the conversation is still active
+    if (!isSpeaking.value) { // Only restart if not currently speaking
+        // recognition.start(); // Auto-restart for continuous
     }
   };
 }
@@ -138,8 +120,9 @@ function initSpeechSynthesis() {
     const voices = synthesis.getVoices();
     const indianVoice = voices.find(voice => voice.lang === 'en-IN' || voice.name.includes('India'));
     if (indianVoice) {
-      utterance.value.voice = indianVoice;
-      console.log('Using Indian English voice:', indianVoice.name);
+      // You can set the default voice here or when creating the utterance
+      // synthesis.defaultVoice = indianVoice;
+       console.log('Indian English voice available:', indianVoice.name);
     } else {
       console.warn('Indian English voice not found. Using default.');
     }
@@ -149,82 +132,91 @@ function initSpeechSynthesis() {
 const speakText = (text) => {
   if (!synthesis || !text) return;
 
-  utterance.value = new SpeechSynthesisUtterance(text);
+  const utterance = new SpeechSynthesisUtterance(text);
    // Attempt to set Indian English voice here as well
   const voices = synthesis.getVoices();
   const indianVoice = voices.find(voice => voice.lang === 'en-IN' || voice.name.includes('India'));
   if (indianVoice) {
-    utterance.value.voice = indianVoice;
+    utterance.voice = indianVoice;
   }
 
-  utterance.value.onstart = () => {
+  utterance.onstart = () => {
       isSpeaking.value = true;
-      loading.value = false; // Speaking starts, so not just loading
+      isListening.value = false; // Not listening when speaking starts
+      console.log('Speaking started.');
   };
 
-  utterance.value.onend = () => {
+  utterance.onend = () => {
       isSpeaking.value = false;
-      currentSentence.value = ''; // Clear sentence after speaking
-       // You might want to go back to listening automatically here
-      // toggleListening();
+      console.log('Speaking ended.');
+       // Speaking ends, go back to listening for continuous conversation
+      if (!isListening.value) { // Prevent double-starting if already listening
+        recognition.start(); // Auto-restart listening
+      }
   };
 
-  utterance.value.onerror = (event) => {
+  utterance.onerror = (event) => {
        isSpeaking.value = false;
        console.error('Text-to-speech error:', event.error);
-       currentSentence.value = 'Error speaking.';
+       // Handle speaking errors
+       // If speech synthesis fails, you might want to restart listening
+      if (!isListening.value) {
+         recognition.start(); // Auto-restart listening
+      }
   };
 
 
-  synthesis.speak(utterance.value);
+  synthesis.speak(utterance);
 };
 
-const toggleListening = () => {
-  if (!recognition) return;
-  if (isListening.value) {
-    recognition.stop();
-  } else {
-     currentSentence.value = ''; // Clear previous on start
-    recognition.start();
-  }
+const startConversation = () => {
+    if (!recognition) {
+        initSpeechRecognition(); // Initialize if not already
+    }
+     if (!synthesis) {
+        initSpeechSynthesis(); // Initialize if not already
+    }
+    if (recognition && !isListening.value) {
+        conversationHistory = [{ role: 'system', content: 'You are a friendly English tutor. Help the user learn and speak English clearly and concisely. Avoid using asterisks or formatting characters.' }]; // Initialize history with system message
+        recognition.start();
+    }
 };
 
-const stopInteraction = () => {
+const stopConversation = () => {
   if (isListening.value && recognition) {
     recognition.stop(); // Stop listening
   }
   if (synthesis && synthesis.speaking) {
     synthesis.cancel(); // Stop speaking
   }
-  loading.value = false;
   isListening.value = false;
   isSpeaking.value = false;
-  currentSentence.value = ''; // Clear current sentence on end
+  conversationHistory = []; // Clear history on conversation end
+  console.log('Conversation ended.');
 };
 
-// Send recognized speech to Gemini API
-async function sendToApi(text) {
-    if (!text.trim() || loading.value) return;
 
-    loading.value = true;
-    isListening.value = false; // Stop listening while processing
+// Send recognized speech to OpenAI API
+async function sendToApi(text) {
+    if (!text.trim()) return;
+
+    isListening.value = false; // Stop listening while processing and speaking
+     // isSpeaking.value = true; // Indicate processing/speaking state - manage in speakText
+
+    // Add user message to history for context
+    conversationHistory.push({ role: 'user', content: text });
 
     try {
-        // ** Your Gemini API call logic here **
-         const response = await fetch(GEMINI_API_ENDPOINT, {
+        // ** OpenAI API call logic **
+         const response = await fetch(OPENAI_API_ENDPOINT, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'x-goog-api-key': GEMINI_API_KEY, // Use x-goog-api-key
+                'Authorization': `Bearer ${OPENAI_API_KEY}`, // Use Authorization: Bearer for OpenAI
             },
             body: JSON.stringify({
-                 // Adjust based on Gemini API documentation for prompt format
-                contents: [{
-                    role: 'user',
-                    parts: [{ text: text }]
-                }],
-                 // Add instructions to avoid asterisks
-                 system_instructions: "Do not include any asterisks or formatting characters in your response.",
+                 model: 'gpt-3.5-turbo', // Or your preferred OpenAI model
+                 messages: conversationHistory, // Send the conversation history
             }),
         });
 
@@ -233,21 +225,29 @@ async function sendToApi(text) {
         }
 
         const responseData = await response.json();
-         // Adjust response parsing
-        const aiResponse = responseData.candidates?.[0]?.content?.parts?.[0]?.text || 'Error: Could not get AI response.';
+         // Adjust response parsing for OpenAI chat completions
+        const aiResponse = responseData.choices?.[0]?.message?.content?.trim() || 'Error: Could not get AI response.';
 
-        currentSentence.value = aiResponse; // Display AI response
+         // Add AI response to history
+        conversationHistory.push({ role: 'assistant', content: aiResponse }); // Use 'assistant' role for AI in OpenAI history
+
         speakText(aiResponse); // Speak the AI response
 
     } catch (error) {
         console.error('Error sending to API:', error);
-        currentSentence.value = 'Error processing your request.';
-        loading.value = false;
+         // Handle API errors, perhaps speak an error message
+         speakText('Sorry, I encountered an error.');
+        isSpeaking.value = false; // Ensure speaking state is off on error
+         // If API call fails, you might want to go back to listening
+        if (!isListening.value) {
+            recognition.start(); // Auto-restart listening
+        }
     }
 }
 
 
 onMounted(() => {
+  // Initialize on mount, but don't start listening until user taps mic
   initSpeechRecognition();
   initSpeechSynthesis();
 });
@@ -261,48 +261,29 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.main-interaction-area {
+.gradient-circle {
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  /* Basic gradient placeholders - replace with dynamic animations */
+  background: linear-gradient(45deg, #ff9a8b 0%, #ff6a88 55%, #ff99ac 100%); /* Default idle gradient */
+  transition: background 0.5s ease; /* Smooth transition between gradients */
+}
+
+.speaking-gradient {
+  background: linear-gradient(45deg, #84fab0 0%, #8fd3f4 100%); /* Speaking gradient (calm blue/green) */
+}
+
+.listening-gradient {
+  background: linear-gradient(45deg, #a18cd1 0%, #fbc2eb 100%); /* Listening gradient (calm purple/pink) */
+}
+
+.bottom-controls {
+  position: absolute;
+  bottom: 20px; /* Adjust position as needed */
   width: 100%;
 }
 
-.visualizer-area {
-  width: 100%;
-}
-
-.bottom-control-area {
-  width: 100%;
-  background-color: white;
-  box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
-}
-
-.listening-visualizer,
-.speaking-visualizer,
-.idle-mic {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-
-/* You'll need more complex CSS or a library for actual wave animations */
-.listening-visualizer v-icon,
-.speaking-visualizer v-icon {
-    /* Basic animation placeholder */
-    animation: pulse 1.5s infinite ease-in-out;
-}
-
-@keyframes pulse {
-    0% {
-        transform: scale(0.9);
-        opacity: 0.7;
-    }
-    50% {
-        transform: scale(1);
-        opacity: 1;
-    }
-    100% {
-        transform: scale(0.9);
-        opacity: 0.7;
-    }
-}
+/* Add more sophisticated animations for water spilling and wave effects */
+/* This will likely involve CSS animations, canvas, or WebGL */
 </style>
