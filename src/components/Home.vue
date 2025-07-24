@@ -7,7 +7,7 @@
       :class="{ 'speaking-gradient': isSpeaking, 'listening-gradient': isListening, 'idle-gradient': !isSpeaking && !isListening, 'animate-gradient': isSpeaking }"
     >
       <!-- Icon inside the circle -->
-      <v-icon size="80" color="red">{{ isSpeaking ? 'mdi-volume-high' : 'mdi-microphone' }}</v-icon>
+      <v-icon size="80" color="white">{{ isSpeaking ? 'mdi-volume-high' : 'mdi-microphone' }}</v-icon>
     </div>
 
     <!-- Bottom Controls -->
@@ -36,6 +36,10 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue';
+
+// If you need specific icons not included globally, you might need to import them
+// import '@mdi/font/css/materialdesignicons.css' // Ensure MDI font is available
+// import { mdiMicrophone, mdiStopCircle, mdiPhoneHangup, mdiVolumeHigh } from '@mdi/js'; // If using @mdi/js
 
 const isListening = ref(false);
 const isSpeaking = ref(false);
@@ -314,8 +318,8 @@ onBeforeUnmount(() => {
 
 /* Style for the icon buttons to ensure visibility */
 .bottom-controls .v-btn {
-    background-color: rgba(255, 255, 255, 0.8); /* Slightly transparent white background for visibility */
+    background-color: rgba(255, 255, 255, 0.9); /* Slightly transparent white background for visibility */
     border-radius: 50%;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3); /* Increased shadow for better contrast */
 }
 </style>
