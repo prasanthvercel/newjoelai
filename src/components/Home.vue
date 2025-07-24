@@ -1,8 +1,5 @@
 <template>
   <v-container fluid class="fill-height d-flex flex-column pa-0">
-    <!-- Top App Bar (already in App.vue) -->
-    <!-- This section will be managed by App.vue -->
-
     <!-- Main Interaction Area (Chat Area) -->
     <div class="chat-area flex-grow-1 d-flex flex-column overflow-y-auto pa-4">
       <div v-for="(msg, i) in conv" :key="i" :class="msg.sender === 'user' ? 'align-self-end' : 'align-self-start'" class="my-1">
@@ -51,9 +48,6 @@
         <v-btn color="error" small @click="stopInteraction">End</v-btn>
       </div>
     </div>
-
-    <!-- Bottom Navigation Bar (already in App.vue) -->
-    <!-- This section will be managed by App.vue -->
   </v-container>
 </template>
 
@@ -118,13 +112,124 @@ async function sendChat(message) {
     speak(reply) // Speak the AI response
   } catch (err) {
     console.error('API error:', err)
-    conv.value.push({ sender: 'ai', text: 'Error: Unable to get a response.' })\n  } finally {\n    loading.value = false\n    scrollBottom()\n  }\n}\n\n// Initialize browser speech recognition\nfunction initSpeechRecognition() {\n  if (!(\'webkitSpeechRecognition\' in window)) {\n    alert(\'Your browser does not support speech recognition.\')\n    return\n  }\n\n  recognition = new webkitSpeechRecognition()\n  recognition.lang = \'en-US\'\n  recognition.interimResults = false\n  recognition.continuous = false\n\n  recognition.onstart = () => (isListening.value = true)\n\n  recognition.onresult = (event) => {\n    const transcript = event.results[0][0].transcript\n    // Instead of putting in input, directly send the chat\n    sendChat(transcript)\n  }\n\n  recognition.onerror = (event) => {\n    console.error(\'Speech recognition error:\', event.error)\n    isListening.value = false\n  }\n\n  recognition.onend = () => {\n    isListening.value = false\n    // If not loading, and interaction wasn\'t stopped manually,\n    // you might want to go back to the idle mic state\n    if (!loading.value) {\n       // This might involve setting a state to show the initial mic button\n    }\n  }\n}\n\n// Initialize browser text-to-speech\nfunction initSpeechSynthesis() {\n  if (!(\'speechSynthesis\' in window)) {\n    alert(\'Your browser does not support text-to-speech.\')\n    return;\n  }\n  synthesis = window.speechSynthesis;\n}\n\n\nfunction toggleListening() {\n  if (!recognition) return\n  if (isListening.value) {\n    recognition.stop()\n  } else {\n    // Clear previous conversation when starting new voice interaction (optional)\n    // conv.value = [];\n    recognition.start()\n  }\n}\n\nfunction stopInteraction() {\n  if (isListening.value && recognition) {\n    recognition.stop(); // Stop listening\n  }\n  if (synthesis) {\n    synthesis.cancel(); // Stop speaking\n  }\n  loading.value = false; // Ensure loading is off\n  isListening.value = false; // Ensure listening is off\n  // Any other state resets\n}\n\n\n// Handle logout (if still needed)\n// async function handleLogout() {\n//   try {\n//     const { error } = await supabase.auth.signOut()\n//     if (error) throw error\n//     router.push('/login')\n//   } catch (error) {\n//     alert(error.message)\n//   }\n// }\n\n\nonMounted(() => {\n  initSpeechRecognition();\n  initSpeechSynthesis();\n});\n\nonBeforeUnmount(() => {\n  recognition?.stop()\n  synthesis?.cancel()\n})\n</script>\n\n<style scoped>\n.chat-area {\n  background-color: #f9f9f9;\n  flex-grow: 1; /* Make the chat area take up available space */\n}\n\n.chat-area > div {\n  width: fit-content; /* Adjust width based on content */\n  max-width: 80%; /* Limit maximum width */\n}\n\n.bottom-control-area {\n  width: 100%;\n  background-color: white; /* Add a background */\n  box-shadow: 0 -2px 4px rgba(0,0,0,0.1); /* Add a subtle shadow */\n}\n\n.voice-visualizer {\n  /* Add animation or dynamic styling later */\n  /* For now, it's just a blue circle */\n}\n</style>\n", "status": "succeeded"}}
-I understand. Let's refine the styling and layout in `Home.vue` to make it look better and more closely resemble the Gemini Live interface based on your screenshot.
+    conv.value.push({ sender: 'ai', text: 'Error: Unable to get a response.' })
+  } finally {
+    loading.value = false
+    scrollBottom()
+  }
+}
 
-Here's what I'll do to improve the appearance:
+// Initialize browser speech recognition
+function initSpeechRecognition() {
+  if (!('webkitSpeechRecognition' in window)) {
+    alert('Your browser does not support speech recognition.')
+    return
+  }
 
-1.  **Refine Chat Bubble Styling:** Make the chat bubbles look more like conversational messages with rounded corners and appropriate spacing.
-2.  **Adjust Layout for Top/Bottom Nav:** Ensure the chat area properly fills the space between the top app bar (which is in `App.vue`) and the bottom control area/bottom navigation bar (also in `App.vue`).
-3.  **Center Bottom Controls:** Make sure the microphone button and related elements in the bottom control area are horizontally centered.
+  recognition = new webkitSpeechRecognition()
+  recognition.lang = 'en-US'
+  recognition.interimResults = false
+  recognition.continuous = false
 
-Here's the updated `Home.vue` code with improved styling:
+  recognition.onstart = () => (isListening.value = true)
+
+  recognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript
+    // Instead of putting in input, directly send the chat
+    sendChat(transcript)
+  }
+
+  recognition.onerror = (event) => {
+    console.error('Speech recognition error:', event.error)
+    isListening.value = false
+  }
+
+  recognition.onend = () => {
+    isListening.value = false
+    // If not loading, and interaction wasn't stopped manually,
+    // you might want to go back to the idle mic state
+    if (!loading.value) {
+       // This might involve setting a state to show the initial mic button
+    }
+  }
+}
+
+// Initialize browser text-to-speech
+function initSpeechSynthesis() {
+  if (!('speechSynthesis' in window)) {
+    alert('Your browser does not support text-to-speech.')
+    return;
+  }
+  synthesis = window.speechSynthesis;
+}
+
+
+function toggleListening() {
+  if (!recognition) return
+  if (isListening.value) {
+    recognition.stop()
+  } else {
+    // Clear previous conversation when starting new voice interaction (optional)
+    // conv.value = [];
+    recognition.start()
+  }
+}
+
+function stopInteraction() {
+  if (isListening.value && recognition) {
+    recognition.stop(); // Stop listening
+  }
+  if (synthesis) {
+    synthesis.cancel(); // Stop speaking
+  }
+  loading.value = false; // Ensure loading is off
+  isListening.value = false; // Ensure listening is off
+  // Any other state resets
+}
+
+
+// Handle logout (if still needed)
+// async function handleLogout() {
+//   try {
+//     const { error } = await supabase.auth.signOut()
+//     if (error) throw error
+//     router.push('/login')
+//   } catch (error) {
+//     alert(error.message)
+//   }
+// }
+
+
+onMounted(() => {
+  initSpeechRecognition();
+  initSpeechSynthesis();
+});
+
+onBeforeUnmount(() => {
+  recognition?.stop()
+  synthesis?.cancel()
+})
+</script>
+
+<style scoped>
+.chat-area {
+  background-color: #f9f9f9;
+  flex-grow: 1; /* Make the chat area take up available space */
+}
+
+.chat-area > div {
+  width: fit-content; /* Adjust width based on content */
+  max-width: 80%; /* Limit maximum width */
+}
+
+.bottom-control-area {
+  width: 100%;
+  background-color: white; /* Add a background */
+  box-shadow: 0 -2px 4px rgba(0,0,0,0.1); /* Add a subtle shadow */
+}
+
+.voice-visualizer {
+  /* Add animation or dynamic styling later */
+  /* For now, it's just a blue circle */
+}
+</style>
