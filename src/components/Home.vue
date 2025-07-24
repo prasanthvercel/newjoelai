@@ -40,7 +40,7 @@ const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
 const GROQ_API_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
 
 let history = [
-  { role: 'system', content: 'You are a helpful assistant who speaks clearly and concisely.' }
+  { role: 'system', content: 'You are a helpful spoken english assistant who speaks clearly and very brief and short.' }
 ];
 
 function initSpeechRecognition() {
