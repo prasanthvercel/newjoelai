@@ -13,17 +13,21 @@
     <!-- Bottom Controls -->
     <div class="bottom-controls d-flex justify-center align-center pa-4">
       <div v-if="!isListening && !isSpeaking">
-        <!-- Microphone icon to start -->
+        <!-- Microphone icon to start new conversation -->
         <v-btn icon large @click="startConversation">
           <v-icon size="48" color="primary">mdi-microphone</v-icon>
         </v-btn>
       </div>
 
-      <div v-else>
-        <!-- Call end icon to stop -->
-        <v-btn icon large color="error" @click="stopConversation">
-          <v-icon size="48">mdi-phone-hangup</v-icon>
+      <div v-else class="d-flex align-center">
+        <!-- Stop conversation icon -->
+        <v-btn icon large @click="stopConversation" class="mx-2">
+            <v-icon size="48" color="error">mdi-stop-circle</v-icon>
         </v-btn>
+         <!-- Call end icon (optional, if you want both stop and call end) -->
+         <!-- <v-btn icon large color="error" @click="endCall" class="mx-2">
+            <v-icon size="48">mdi-phone-hangup</v-icon>
+        </v-btn> -->
       </div>
     </div>
 
