@@ -1,123 +1,157 @@
 <template>
   <v-container fluid class="fill-height d-flex flex-column pa-0">
-    <v-toolbar flat>
-      <v-toolbar-title>English Voice Tutor</v-toolbar-title>
-    </v-toolbar>
+    <v-app-bar color="primary" dark flat>
+      <v-toolbar-title>🎧 English Voice Tutor</v-toolbar-title>
+    </v-app-bar>
 
-    <div class="ai-interaction-area flex-grow-1 d-flex flex-column overflow-y-auto p-4" ref="chatArea">
-      <div v-for="(msg, i) in conv" :key="i" :class="msg.sender==='user'?'align-self-end':'align-self-start'">
-        <v-chip :color="msg.sender==='user'?'primary':'grey lighten-2'" class="ma-2 pa-4" :rounded="true">
+    <div class="chat-area flex-grow-1 d-flex flex-column overflow-y-auto pa-4" ref="chatArea">
+      <div v-for="(msg, i) in conv" :key="i" :class="msg.sender === 'user' ? 'align-self-end' : 'align-self-start'">
+        <v-chip
+          :color="msg.sender === 'user' ? 'primary' : 'grey lighten-2'"
+          class="ma-2 pa-4"
+          label
+          :text-color="msg.sender === 'user' ? 'white' : 'black'"
+        >
           {{ msg.text }}
         </v-chip>
       </div>
-      <div v-if="loading" class="d-flex justify-center my-2">
-        <v-progress-circular indeterminate color="primary"/>
+
+      <div v-if="loading" class="d-flex justify-start mb-4">
+        <v-progress-circular indeterminate color="primary" />
       </div>
     </div>
 
-    <v-row class="pa-4">
-      <v-btn icon @click="toggleListening" :color="isListening?'red':'primary'">
+    <v-row class="pa-4" align="center">
+      <v-btn icon :color="isListening ? 'red' : 'primary'" @click="toggleListening">
         <v-icon>{{ isListening ? 'mdi-microphone-off' : 'mdi-microphone' }}</v-icon>
       </v-btn>
 
       <v-text-field
         v-model="input"
-        placeholder="Speak or type..."
-        dense outlined hide-details class="flex-grow-1 mx-2"
+        placeholder="Speak or type your question..."
+        dense
+        outlined
+        hide-details
+        class="flex-grow-1 mx-2"
         @keyup.enter="sendChat"
         :disabled="loading || isListening"
       />
 
-      <v-btn @click="sendChat" :disabled="!input || loading">Send</v-btn>
+      <v-btn color="primary" @click="sendChat" :disabled="!input || loading">Send</v-btn>
     </v-row>
   </v-container>
 </template>
 
 <script setup>
-import { ref, nextTick, onMounted, onBeforeUnmount } from 'vue';
-import { Configuration, OpenAIApi } from 'openai';
+import { ref, nextTick, onMounted, onBeforeUnmount } from 'vue'
 
-// OpenAI setup
-const openai = new OpenAIApi(new Configuration({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-}));
+const input = ref('')
+const conv = ref([])
+const loading = ref(false)
+const isListening = ref(false)
+const chatArea = ref(null)
+let recognition = null
 
-const input = ref('');
-const conv = ref([]);
-const loading = ref(false);
-const isListening = ref(false);
-const chatArea = ref(null);
-
-let recognition;
-
+// Auto-scroll to bottom
 function scrollBottom() {
   nextTick(() => {
-    if (chatArea.value) chatArea.value.scrollTop = chatArea.value.scrollHeight;
-  });
+    if (chatArea.value) chatArea.value.scrollTop = chatArea.value.scrollHeight
+  })
 }
 
-// Speech-to-text
-function initSpeech() {
-  if (!('webkitSpeechRecognition' in window)) return;
-  recognition = new webkitSpeechRecognition();
-  recognition.lang = 'en-US';
-  recognition.interimResults = false;
-
-  recognition.onstart = () => isListening.value = true;
-  recognition.onresult = e => {
-    input.value = e.results[0][0].transcript;
-    sendChat();
-  };
-  recognition.onend = () => isListening.value = false;
-}
-
-function toggleListening() {
-  if (isListening.value) recognition.stop();
-  else recognition.start();
-}
-
-// Text-to-speech
+// Speak text using browser TTS
 function speak(text) {
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'en-US';
-  speechSynthesis.speak(u);
+  const u = new SpeechSynthesisUtterance(text)
+  u.lang = 'en-US'
+  speechSynthesis.speak(u)
 }
 
-// Send chat
+// Send chat to OpenAI API
 async function sendChat() {
-  if (!input.value.trim() || loading.value) return;
-  const userMsg = input.value;
-  conv.value.push({ sender: 'user', text: userMsg });
-  input.value = '';
-  loading.value = true;
-  scrollBottom();
+  if (!input.value.trim() || loading.value) return
+
+  const userMsg = input.value
+  conv.value.push({ sender: 'user', text: userMsg })
+  input.value = ''
+  loading.value = true
+  scrollBottom()
 
   try {
-    const resp = await openai.createChatCompletion({
-      model: 'gpt-3.5-turbo',
-      messages: [{ role: 'user', content: userMsg }],
-    });
-    const text = resp.data.choices[0].message.content;
-    conv.value.push({ sender: 'ai', text });
-    speak(text);
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          { role: 'system', content: 'You are a friendly English tutor. Help the user learn and speak English clearly.' },
+          { role: 'user', content: userMsg },
+        ],
+      }),
+    })
+
+    const data = await res.json()
+    const reply = data.choices?.[0]?.message?.content?.trim() || 'I didn’t understand that.'
+
+    conv.value.push({ sender: 'ai', text: reply })
+    speak(reply)
   } catch (err) {
-    console.error(err);
-    conv.value.push({ sender: 'ai', text: 'Oops, something went wrong.' });
+    console.error('OpenAI error:', err)
+    conv.value.push({ sender: 'ai', text: 'Error: Unable to reach OpenAI.' })
   } finally {
-    loading.value = false;
-    scrollBottom();
+    loading.value = false
+    scrollBottom()
   }
 }
 
-onMounted(() => initSpeech());
+// Initialize browser speech recognition
+function initSpeech() {
+  if (!('webkitSpeechRecognition' in window)) {
+    alert('Your browser does not support speech recognition.')
+    return
+  }
+
+  recognition = new webkitSpeechRecognition()
+  recognition.lang = 'en-US'
+  recognition.interimResults = false
+  recognition.continuous = false
+
+  recognition.onstart = () => (isListening.value = true)
+
+  recognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript
+    input.value = transcript
+    sendChat()
+  }
+
+  recognition.onerror = (event) => {
+    console.error('Speech recognition error:', event.error)
+    isListening.value = false
+  }
+
+  recognition.onend = () => (isListening.value = false)
+}
+
+function toggleListening() {
+  if (!recognition) return
+  if (isListening.value) {
+    recognition.stop()
+  } else {
+    recognition.start()
+  }
+}
+
+onMounted(() => initSpeech())
 onBeforeUnmount(() => {
-  if (recognition) recognition.abort();
-  speechSynthesis.cancel();
-});
+  recognition?.stop()
+  speechSynthesis.cancel()
+})
 </script>
 
 <style scoped>
-.ai-interaction-area {
-  overflow-y: auto;
+.chat-area {
+  background-color: #f9f9f9;
 }
 </style>
