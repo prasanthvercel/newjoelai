@@ -4,7 +4,7 @@
     <!-- Central Gradient Circle -->
     <div
       class="gradient-circle d-flex justify-center align-center elevation-5"
-      :class="{ 'speaking-gradient': isSpeaking, 'listening-gradient': isListening, 'idle-gradient': !isSpeaking && !isListening }"
+      :class="{ 'speaking-gradient': isSpeaking, 'listening-gradient': isListening, 'idle-gradient': !isSpeaking && !isListening, 'animate-gradient': isSpeaking || isListening }"
     >
       <!-- Icon inside the circle -->
       <v-icon size="80" color="white">{{ isSpeaking ? 'mdi-volume-high' : 'mdi-microphone' }}</v-icon>
@@ -15,7 +15,7 @@
       <div v-if="!isListening && !isSpeaking">
         <!-- Microphone icon to start -->
         <v-btn icon large @click="startConversation">
-          <v-icon size="48">mdi-microphone</v-icon>
+          <v-icon size="48" color="primary">mdi-microphone</v-icon>
         </v-btn>
       </div>
 
