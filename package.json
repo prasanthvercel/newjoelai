@@ -8,13 +8,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@mdi/font": "^7.4.47",
     "@supabase/supabase-js": "^2.52.1",
     "vue": "^3.2.45",
     "vue-router": "^4.5.1",
     "vuetify": "3.9.2"
   },
   "devDependencies": {
+    "@mdi/font": "^7.4.47",
     "@tailwindcss/postcss": "^4.1.11",
     "@vitejs/plugin-vue": "^4.0.0",
     "autoprefixer": "^10.4.21",

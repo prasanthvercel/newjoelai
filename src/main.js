@@ -8,7 +8,7 @@ import Home from './components/Home.vue';
 import ForgotPassword from './components/ForgotPassword.vue';
 import Welcome from './components/Welcome.vue'; // Import the new Welcome component
 import { supabase } from './supabase';
-
+import '@mdi/font/css/materialdesignicons.css
 // Import Vuetify
 import 'vuetify/styles'
 import { createVuetify } from 'vuetify'
