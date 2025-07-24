@@ -1,203 +1,250 @@
 <template>
-  <v-container fluid class="fill-height d-flex flex-column pa-0">
-    <!-- Main Interaction Area (Chat Area) -->
-    <div class="chat-area flex-grow-1 d-flex flex-column overflow-y-auto pa-4">
-      <div v-for="(msg, i) in conv" :key="i" :class="msg.sender === 'user' ? 'align-self-end' : 'align-self-start'" class="my-1">
-        <v-chip
-          :color="msg.sender === 'user' ? 'primary' : 'grey lighten-2'"
-          class="pa-4"
-          label
-          :text-color="msg.sender === 'user' ? 'white' : 'black'"
-          style="height: auto; white-space: normal; word-break: break-word;"
-          :class="{'rounded-br-xl rounded-tr-xl rounded-tl-xl': msg.sender === 'user', 'rounded-bl-xl rounded-tl-xl rounded-tr-xl': msg.sender === 'ai'}"
-        >
-          {{ msg.text }}
-        </v-chip>
+  <v-container fluid class="fill-height d-flex flex-column justify-center align-center pa-0">
+    <!-- Top App Bar (managed by App.vue) -->
+
+    <!-- Main Interaction Area -->
+    <div class="main-interaction-area flex-grow-1 d-flex flex-column justify-center align-center pa-4">
+      <!-- Display Current Sentence -->
+      <div v-if="currentSentence" class="current-sentence text-h6 text-center mb-4">
+        {{ currentSentence }}
       </div>
 
-      <div v-if="loading" class="d-flex justify-start mb-4">
-        <v-progress-circular indeterminate color="primary" />
-      </div>
-    </div>
-
-    <!-- Bottom Control Area (for microphone/visualizer) -->
-    <div class="bottom-control-area d-flex justify-center align-center pa-4">
-      <div v-if="!isListening && !loading">
-        <!-- Microphone button when not listening or loading -->
-        <v-btn icon :color="isListening ? 'red' : 'primary'" size="x-large" @click="toggleListening">
-          <v-icon size="36">{{ isListening ? 'mdi-microphone-off' : 'mdi-microphone' }}</v-icon>
-        </v-btn>
-      </div>
-
-      <div v-if="isListening || loading" class="d-flex flex-column align-center">
-        <!-- Visualizer or status when listening/loading -->
-        <div class="mb-2">
+      <!-- Visualizer Area -->
+      <div class="visualizer-area d-flex justify-center align-center" style="height: 200px;">
+        <!-- Placeholder for Listening/Speaking Visualizer -->
+        <div v-if="isListening" class="listening-visualizer">
+          <!-- Simple placeholder for listening waves -->
+          <v-icon size="60" color="primary">mdi-microphone</v-icon>
+          <p class="text-caption mt-2">Listening...</p>
+        </div>
+        <div v-else-if="loading || isSpeaking" class="speaking-visualizer">
+          <!-- Simple placeholder for speaking/processing waves -->
           <v-progress-circular
             v-if="loading"
             indeterminate
             color="primary"
-            size="50"
-            width="5"
+            size="80"
+            width="8"
           ></v-progress-circular>
-          <!-- Placeholder for a voice visualizer when listening -->
-          <div v-else class="voice-visualizer" style="width: 50px; height: 50px; background-color: blue; border-radius: 50%;">
-            <!-- Simple placeholder -->
-          </div>
+          <v-icon v-else size="60" color="primary">mdi-volume-high</v-icon>
+           <p class="text-caption mt-2">{{ loading ? 'Processing...' : 'Speaking...' }}</p>
         </div>
-        <!-- End button -->
-        <v-btn color="error" small @click="stopInteraction">End</v-btn>
+        <div v-else class="idle-mic">
+           <v-icon size="60" color="grey">mdi-microphone</v-icon>
+           <p class="text-caption mt-2">Tap to speak</p>
+        </div>
       </div>
     </div>
+
+    <!-- Bottom Control Area -->
+    <div class="bottom-control-area d-flex justify-center align-center pa-4">
+      <div v-if="!isListening && !loading && !isSpeaking">
+        <!-- Microphone button to start -->
+        <v-btn icon color="primary" size="x-large" @click="toggleListening">
+          <v-icon size="36">mdi-microphone</v-icon>
+        </v-btn>
+      </div>
+
+      <div v-if="isListening || loading || isSpeaking">
+        <!-- End button to stop -->
+        <v-btn color="error" large rounded @click="stopInteraction">End Conversation</v-btn>
+      </div>
+    </div>
+
+    <!-- Bottom Navigation Bar (managed by App.vue) -->
   </v-container>
 </template>
 
 <script setup>
-import { ref, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import { ref, nextTick, onMounted, onBeforeUnmount } from 'vue';
 
-const input = ref('')
-const conv = ref([])
-const loading = ref(false)
-const isListening = ref(false)
-const chatArea = ref(null)
-let recognition = null
-let synthesis = null
+const currentSentence = ref('');
+const loading = ref(false);
+const isListening = ref(false);
+const isSpeaking = ref(false);
 
-// Auto-scroll to bottom
-function scrollBottom() {
-  nextTick(() => {
-    if (chatArea.value) chatArea.value.scrollTop = chatArea.value.scrollHeight
-  })
-}
+let recognition = null;
+let synthesis = null;
 
-// Speak text using browser TTS
-function speak(text) {
-  if (!synthesis) return;
-  const u = new SpeechSynthesisUtterance(text)
-  u.lang = 'en-US'
-  synthesis.speak(u)
-}
-
-// Send chat to OpenAI API (or your Gemini API endpoint)
-async function sendChat(message) {
-  if (!message.trim() || loading.value) return
-
-  const userMsg = message
-  conv.value.push({ sender: 'user', text: userMsg })
-  input.value = '' // Clear text input after sending
-  loading.value = true
-  scrollBottom()
-
-  try {
-    // ** Replace with your Gemini API call logic **
-    // Using OpenAI API for now as per your provided code
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`, // Using OpenAI API key
-      },
-      body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
-        messages: [
-          { role: 'system', content: 'You are a friendly English tutor. Help the user learn and speak English clearly.' },
-          { role: 'user', content: userMsg },
-        ],
-      }),
-    })
-
-    const data = await res.json()
-    const reply = data.choices?.[0]?.message?.content?.trim() || 'I didn’t understand that.'
-
-    conv.value.push({ sender: 'ai', text: reply })
-    speak(reply) // Speak the AI response
-  } catch (err) {
-    console.error('API error:', err)
-    conv.value.push({ sender: 'ai', text: 'Error: Unable to get a response.' })
-  } finally {
-    loading.value = false
-    scrollBottom()
-  }
-}
+// ** Replace with your actual Gemini API Key (NOT SECURE FOR PRODUCTION)**
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+// ** Hardcoded Gemini API Endpoint for text-based chat**
+const GEMINI_API_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
 
 // Initialize browser speech recognition
 function initSpeechRecognition() {
   if (!('webkitSpeechRecognition' in window)) {
-    alert('Your browser does not support speech recognition.')
-    return
+    console.error('Web Speech API is not supported by this browser.');
+    return;
   }
 
-  recognition = new webkitSpeechRecognition()
-  recognition.lang = 'en-US'
-  recognition.interimResults = false
-  recognition.continuous = false
+  recognition = new webkitSpeechRecognition();
+  recognition.continuous = false;
+  recognition.interimResults = true; // Get interim results to display text while speaking
+  recognition.lang = 'en-IN'; // Attempt to set to Indian English
 
-  recognition.onstart = () => (isListening.value = true)
+  recognition.onstart = () => {
+    isListening.value = true;
+    currentSentence.value = ''; // Clear previous sentence
+    console.log('Speech recognition started.');
+  };
 
   recognition.onresult = (event) => {
-    const transcript = event.results[0][0].transcript
-    // Instead of putting in input, directly send the chat
-    sendChat(transcript)
-  }
+    let interimTranscript = '';
+    let finalTranscript = '';
+
+    for (let i = event.resultIndex; i < event.results.length; ++i) {
+      if (event.results[i].isFinal) {
+        finalTranscript += event.results[i][0].transcript;
+      } else {
+        interimTranscript += event.results[i][0].transcript;
+      }
+    }
+
+    currentSentence.value = finalTranscript || interimTranscript; // Display final or interim transcript
+    console.log('Transcript:', currentSentence.value);
+
+    if (finalTranscript) {
+      // Send final transcript to API
+      sendToApi(finalTranscript);
+    }
+  };
 
   recognition.onerror = (event) => {
-    console.error('Speech recognition error:', event.error)
-    isListening.value = false
-  }
+    isListening.value = false;
+    console.error('Speech recognition error:', event.error);
+    currentSentence.value = 'Error listening. Tap to try again.';
+  };
 
   recognition.onend = () => {
-    isListening.value = false
-    // If not loading, and interaction wasn't stopped manually,
-    // you might want to go back to the idle mic state
-    if (!loading.value) {
-       // This might involve setting a state to show the initial mic button
+    isListening.value = false;
+    console.log('Speech recognition ended.');
+    if (!loading.value && !currentSentence.value) {
+        currentSentence.value = 'No speech detected. Tap to speak.';
     }
-  }
+  };
 }
 
 // Initialize browser text-to-speech
 function initSpeechSynthesis() {
   if (!('speechSynthesis' in window)) {
-    alert('Your browser does not support text-to-speech.')
+    console.error('Text-to-speech is not supported by this browser.');
     return;
   }
   synthesis = window.speechSynthesis;
+
+  // Find an Indian English voice (if available)
+  synthesis.onvoiceschanged = () => {
+    const voices = synthesis.getVoices();
+    const indianVoice = voices.find(voice => voice.lang === 'en-IN' || voice.name.includes('India'));
+    if (indianVoice) {
+      utterance.value.voice = indianVoice;
+      console.log('Using Indian English voice:', indianVoice.name);
+    } else {
+      console.warn('Indian English voice not found. Using default.');
+    }
+  };
 }
 
+const speakText = (text) => {
+  if (!synthesis || !text) return;
 
-function toggleListening() {
-  if (!recognition) return
-  if (isListening.value) {
-    recognition.stop()
-  } else {
-    // Clear previous conversation when starting new voice interaction (optional)
-    // conv.value = [];
-    recognition.start()
+  utterance.value = new SpeechSynthesisUtterance(text);
+   // Attempt to set Indian English voice here as well
+  const voices = synthesis.getVoices();
+  const indianVoice = voices.find(voice => voice.lang === 'en-IN' || voice.name.includes('India'));
+  if (indianVoice) {
+    utterance.value.voice = indianVoice;
   }
-}
 
-function stopInteraction() {
+  utterance.value.onstart = () => {
+      isSpeaking.value = true;
+      loading.value = false; // Speaking starts, so not just loading
+  };
+
+  utterance.value.onend = () => {
+      isSpeaking.value = false;
+      currentSentence.value = ''; // Clear sentence after speaking
+       // You might want to go back to listening automatically here
+      // toggleListening();
+  };
+
+  utterance.value.onerror = (event) => {
+       isSpeaking.value = false;
+       console.error('Text-to-speech error:', event.error);
+       currentSentence.value = 'Error speaking.';
+  };
+
+
+  synthesis.speak(utterance.value);
+};
+
+const toggleListening = () => {
+  if (!recognition) return;
+  if (isListening.value) {
+    recognition.stop();
+  } else {
+     currentSentence.value = ''; // Clear previous on start
+    recognition.start();
+  }
+};
+
+const stopInteraction = () => {
   if (isListening.value && recognition) {
     recognition.stop(); // Stop listening
   }
-  if (synthesis) {
+  if (synthesis && synthesis.speaking) {
     synthesis.cancel(); // Stop speaking
   }
-  loading.value = false; // Ensure loading is off
-  isListening.value = false; // Ensure listening is off
-  // Any other state resets
+  loading.value = false;
+  isListening.value = false;
+  isSpeaking.value = false;
+  currentSentence.value = ''; // Clear current sentence on end
+};
+
+// Send recognized speech to Gemini API
+async function sendToApi(text) {
+    if (!text.trim() || loading.value) return;
+
+    loading.value = true;
+    isListening.value = false; // Stop listening while processing
+
+    try {
+        // ** Your Gemini API call logic here **
+         const response = await fetch(GEMINI_API_ENDPOINT, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-goog-api-key': GEMINI_API_KEY, // Use x-goog-api-key
+            },
+            body: JSON.stringify({
+                 // Adjust based on Gemini API documentation for prompt format
+                contents: [{
+                    role: 'user',
+                    parts: [{ text: text }]
+                }],
+                 // Add instructions to avoid asterisks
+                 system_instructions: "Do not include any asterisks or formatting characters in your response.",
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`API request failed with status ${response.status}`);
+        }
+
+        const responseData = await response.json();
+         // Adjust response parsing
+        const aiResponse = responseData.candidates?.[0]?.content?.parts?.[0]?.text || 'Error: Could not get AI response.';
+
+        currentSentence.value = aiResponse; // Display AI response
+        speakText(aiResponse); // Speak the AI response
+
+    } catch (error) {
+        console.error('Error sending to API:', error);
+        currentSentence.value = 'Error processing your request.';
+        loading.value = false;
+    }
 }
-
-
-// Handle logout (if still needed)
-// async function handleLogout() {
-//   try {
-//     const { error } = await supabase.auth.signOut()
-//     if (error) throw error
-//     router.push('/login')
-//   } catch (error) {
-//     alert(error.message)
-//   }
-// }
 
 
 onMounted(() => {
@@ -206,30 +253,56 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
-  recognition?.stop()
-  synthesis?.cancel()
-})
+  recognition?.stop();
+  if (synthesis && synthesis.speaking) {
+     synthesis.cancel();
+  }
+});
 </script>
 
 <style scoped>
-.chat-area {
-  background-color: #f9f9f9;
-  flex-grow: 1; /* Make the chat area take up available space */
+.main-interaction-area {
+  width: 100%;
 }
 
-.chat-area > div {
-  width: fit-content; /* Adjust width based on content */
-  max-width: 80%; /* Limit maximum width */
+.visualizer-area {
+  width: 100%;
 }
 
 .bottom-control-area {
   width: 100%;
-  background-color: white; /* Add a background */
-  box-shadow: 0 -2px 4px rgba(0,0,0,0.1); /* Add a subtle shadow */
+  background-color: white;
+  box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
 }
 
-.voice-visualizer {
-  /* Add animation or dynamic styling later */
-  /* For now, it's just a blue circle */
+.listening-visualizer,
+.speaking-visualizer,
+.idle-mic {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+/* You'll need more complex CSS or a library for actual wave animations */
+.listening-visualizer v-icon,
+.speaking-visualizer v-icon {
+    /* Basic animation placeholder */
+    animation: pulse 1.5s infinite ease-in-out;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(0.9);
+        opacity: 0.7;
+    }
+    50% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(0.9);
+        opacity: 0.7;
+    }
 }
 </style>
