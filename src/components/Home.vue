@@ -94,6 +94,14 @@ function initSpeechRecognition() {
     isSpeaking.value = false; // Not speaking when listening starts
     currentUtterance.value = ''; // Clear previous utterance
     console.log('Speech recognition started.');
+
+    // *** Add this line to stop speech synthesis when listening starts ***
+    if (synthesis && synthesis.speaking) {
+      synthesis.cancel();
+      isSpeaking.value = false; // Update speaking state
+      console.log('Speech synthesis cancelled due to new speech input.');
+    }
+    // *******************************************************************
   };
 
   recognition.onresult = (event) => {
