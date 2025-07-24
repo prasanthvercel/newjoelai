@@ -1,10 +1,10 @@
 <template>
-  <v-container fluid class="fill-height d-flex flex-column justify-center align-center pa-0">
+  <v-container fluid class="fill-height d-flex flex-column justify-center align-center app-background pa-0">
 
     <!-- Central Gradient Circle -->
     <div
-      class="gradient-circle d-flex justify-center align-center elevation-5"
-      :class="{ 'speaking-gradient': isSpeaking, 'listening-gradient': isListening, 'idle-gradient': !isSpeaking && !isListening, 'animate-gradient': isSpeaking || isListening }"
+      class="gradient-circle d-flex justify-center align-center elevation-10"
+      :class="{ 'speaking-gradient': isSpeaking, 'listening-gradient': isListening, 'idle-gradient': !isSpeaking && !isListening, 'animate-gradient': isSpeaking }"
     >
       <!-- Icon inside the circle -->
       <v-icon size="80" color="white">{{ isSpeaking ? 'mdi-volume-high' : 'mdi-microphone' }}</v-icon>
@@ -15,14 +15,14 @@
       <div v-if="!isListening && !isSpeaking">
         <!-- Microphone icon to start new conversation -->
         <v-btn icon large @click="startConversation">
-          <v-icon size="48" color="primary">mdi-microphone</v-icon>
+          <v-icon size="48" color="black">mdi-microphone</v-icon>
         </v-btn>
       </div>
 
       <div v-else class="d-flex align-center">
         <!-- Stop conversation icon -->
-        <v-btn icon large @click="stopConversation" class="mx-2">
-            <v-icon size="48" color="error">mdi-stop-circle</v-icon>
+        <v-btn icon large @click="stopConversation" class="mx-4">
+            <v-icon size="48" color="black">mdi-stop-circle</v-icon>
         </v-btn>
          <!-- Call end icon (optional, if you want both stop and call end) -->
          <!-- <v-btn icon large color="error" @click="endCall" class="mx-2">
@@ -265,29 +265,57 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.app-background {
+  background: linear-gradient(180deg, #f0f2f5 0%, #e0e5ec 100%); /* Subtle light background */
+}
+
 .gradient-circle {
   width: 300px;
   height: 300px;
   border-radius: 50%;
-  /* Basic gradient placeholders - replace with dynamic animations */
-  background: linear-gradient(45deg, #ff9a8b 0%, #ff6a88 55%, #ff99ac 100%); /* Default idle gradient */
-  transition: background 0.5s ease; /* Smooth transition between gradients */
-}
-
-.speaking-gradient {
-  background: linear-gradient(45deg, #84fab0 0%, #8fd3f4 100%); /* Speaking gradient (calm blue/green) */
+  /* More refined gradient placeholders */
+  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); /* Idle: light blues and pinks */
+  transition: background 0.8s ease-in-out; /* Smoother transition */
+  position: relative; /* Needed for potential pseudo-elements for animation */
+  overflow: hidden; /* Hide overflowing animation elements */
 }
 
 .listening-gradient {
-  background: linear-gradient(45deg, #a18cd1 0%, #fbc2eb 100%); /* Listening gradient (calm purple/pink) */
+  background: linear-gradient(135deg, #c471ed 0%, #fcc5e4 100%); /* Listening: purples and pinks */
 }
+
+.speaking-gradient {
+  background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%); /* Speaking: blues */
+   /* Animation placeholder for speaking */
+   animation: speaking-pulse 1.5s infinite ease-in-out;
+}
+
+@keyframes speaking-pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.05);
+        opacity: 0.9;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
 
 .bottom-controls {
   position: absolute;
-  bottom: 20px; /* Adjust position as needed */
+  bottom: 40px; /* Adjust position as needed */
   width: 100%;
 }
 
-/* Add more sophisticated animations for water spilling and wave effects */
-/* This will likely involve CSS animations, canvas, or WebGL */
+/* Style for the icon buttons to ensure visibility */
+.bottom-controls .v-btn {
+    background-color: rgba(255, 255, 255, 0.8); /* Slightly transparent white background for visibility */
+    border-radius: 50%;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
 </style>
