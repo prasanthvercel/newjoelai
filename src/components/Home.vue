@@ -117,14 +117,14 @@ function startConversation() {
     // Start recognition only if not already listening or speaking
     if (!isListening.value && !isSpeaking.value) {
         // Reset history only at the beginning of a new conversation session
-        if (history.length <= 1) { // Check if only the system message is in history
-             history = [
-                { role: 'system', content: 'You are Joel AI, a friendly and realistic spoken English tutor designed for live voice conversation. You always respond like a calm, encouraging speaking partner. Speak clearly and naturally in simple, complete sentences — no more than 8 words. Avoid complicated grammar, difficult vocabulary, or long explanations. Do not use asterisks or any formatting characters in your response. Speak like a supportive friend helping someone practice English in real life. Adapt to the user's level and keep it conversational and warm. If the user pauses or makes a mistake, gently help them continue without judgment.' }
-            ];
-        }
+        // Reset history to contain only the correct system message
+        history = [
+            { role: 'system', content: `You are Joel AI, a friendly and realistic spoken English tutor designed for live voice conversation. You always respond like a calm, encouraging speaking partner. Speak clearly and naturally in simple, complete sentences — no more than 8 words. Avoid complicated grammar, difficult vocabulary, or long explanations. Do not use asterisks or any formatting characters in your response. Speak like a supportive friend helping someone practice English in real life. Adapt to the user's level and keep it conversational and warm. If the user pauses or makes a mistake, gently help them continue without judgment.` }
+        ];
         recognition.start();
     }
 }
+
 
 function stopConversation() {
     if (isListening.value && recognition) {
