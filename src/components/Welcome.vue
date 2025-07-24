@@ -1,16 +1,20 @@
 <template>
-  <div class="relative h-screen bg-white flex flex-col items-center justify-center">
-    <!-- Background Wave (simplified) -->
-    <div class="absolute top-0 left-0 w-full h-1/2 bg-pink-300" style="clip-path: ellipse(100% 55% at 48% 45%);"></div>
+  <v-container fluid class="fill-height d-flex flex-column justify-center align-center">
+    <!-- Background Wave (simplified - Vuetify equivalent or custom if needed) -->
+    <!-- For a simple background color, you can apply it to the container or a parent element -->
+    <!-- For complex shapes like your current wave, you might need custom CSS or an SVG -->
 
-    <div class="relative z-10 text-center p-6">
-      <h1 class="text-4xl font-bold text-gray-800 mb-4">Welcome</h1>
-      <p class="text-gray-600 mb-8">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
-      <router-link to="/login" class="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-full text-white bg-pink-500 hover:bg-pink-600 md:py-4 md:text-lg md:px-8">
-        Continue <span class="ml-2">&rarr;</span>
+    <v-card class="text-center pa-6" elevation="0">
+      <v-card-title class="text-h4 font-weight-bold mb-4">Welcome</v-card-title>
+      <v-card-text class="text-subtitle-1 mb-8">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</v-card-text>
+      <router-link to="/login" class="text-decoration-none">
+        <v-btn color="pink-darken-1" size="large" rounded="xl">
+          Continue
+          <v-icon right>mdi-arrow-right</v-icon>
+        </v-btn>
       </router-link>
-    </div>
-  </div>
+    </v-card>
+  </v-container>
 </template>
 
 <script setup>
@@ -18,5 +22,5 @@
 </script>
 
 <style scoped>
-/* Add any component-specific styles here if needed */
+/* Vuetify handles most styling, custom styles can be added here if necessary */
 </style>

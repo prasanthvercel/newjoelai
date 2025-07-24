@@ -1,97 +1,95 @@
 <template>
-  <div class="relative min-h-screen bg-gray-100 flex flex-col justify-center items-center overflow-hidden">
-    <!-- Background Wave -->
-    <div class="absolute top-0 left-0 w-full h-1/2 bg-pink-300" style="clip-path: ellipse(100% 55% at 48% 45%);"></div>
+  <v-container fluid class="fill-height d-flex flex-column justify-center align-center">
+    <!-- Background Wave (simplified - Vuetify equivalent or custom if needed) -->
+    <!-- For a simple background color, you can apply it to the container or a parent element -->
+    <!-- For complex shapes like your current wave, you might need custom CSS or an SVG -->
 
-    <div class="relative z-10 bg-white p-8 rounded-lg shadow-md w-full max-w-sm">
-      <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Sign Up</h2>
+    <v-card class="pa-8" elevation="2" width="100%" max-width="400">
+      <v-card-title class="text-h5 font-weight-bold text-center mb-6">Sign Up</v-card-title>
 
       <!-- Toast Notification -->
-      <div v-if="toast.message" :class="['p-3 mb-4 text-sm rounded-md', toast.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800']" role="alert">
+      <v-alert
+        v-if="toast.message"
+        :type="toast.type"
+        dense
+        closable
+        class="mb-4"
+      >
         {{ toast.message }}
-      </div>
+      </v-alert>
 
-      <form @submit.prevent="handleSignUp">
-        <div class="mb-4">
-          <label for="name" class="block text-gray-700 text-sm font-bold mb-2">Name</label>
-          <input
-            type="text"
-            id="name"
-            v-model="name"
-            required
-            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            placeholder="Enter your name"
-          />
-          <span v-if="errors.name" class="text-red-500 text-xs italic">{{ errors.name }}</span>
-        </div>
-        <div class="mb-4">
-          <label for="phone" class="block text-gray-700 text-sm font-bold mb-2">Phone Number</label>
-          <input
-            type="tel"
-            id="phone"
-            v-model="phone"
-            required
-            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            placeholder="Enter your phone number"
-          />
-           <span v-if="errors.phone" class="text-red-500 text-xs italic">{{ errors.phone }}</span>
-        </div>
-        <div class="mb-4">
-          <label for="email" class="block text-gray-700 text-sm font-bold mb-2">Email</label>
-          <input
-            type="email"
-            id="email"
-            v-model="email"
-            required
-            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            placeholder="Enter your email"
-          />
-          <span v-if="errors.email" class="text-red-500 text-xs italic">{{ errors.email }}</span>
-        </div>
-        <div class="mb-4">
-          <label for="password" class="block text-gray-700 text-sm font-bold mb-2">Password</label>
-          <input
-            type="password"
-            id="password"
-            v-model="password"
-            required
-            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            placeholder="Enter your password"
-          />
-          <span v-if="errors.password" class="text-red-500 text-xs italic">{{ errors.password }}</span>
-        </div>
-         <div class="mb-6">
-          <label for="confirm-password" class="block text-gray-700 text-sm font-bold mb-2">Confirm Password</label>
-          <input
-            type="password"
-            id="confirm-password"
-            v-model="confirmPassword"
-            required
-            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            placeholder="Confirm your password"
-          />
-           <span v-if="errors.confirmPassword" class="text-red-500 text-xs italic">{{ errors.confirmPassword }}</span>
-        </div>
+      <v-form @submit.prevent="handleSignUp">
+        <v-text-field
+          v-model="name"
+          label="Name"
+          outlined
+          dense
+          required
+          class="mb-4"
+          :error-messages="errors.name"
+        ></v-text-field>
 
-        <div class="flex items-center justify-between">
-          <button
-            type="submit"
-            class="bg-pink-500 hover:bg-pink-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full"
-          >
-            Sign Up
-          </button>
-        </div>
-      </form>
+        <v-text-field
+          v-model="phone"
+          label="Phone Number"
+          outlined
+          dense
+          required
+          class="mb-4"
+          :error-messages="errors.phone"
+        ></v-text-field>
+
+        <v-text-field
+          v-model="email"
+          label="Email"
+          outlined
+          dense
+          required
+          class="mb-4"
+          :error-messages="errors.email"
+        ></v-text-field>
+
+        <v-text-field
+          v-model="password"
+          label="Password"
+          outlined
+          dense
+          required
+          type="password"
+          class="mb-4"
+          :error-messages="errors.password"
+        ></v-text-field>
+
+        <v-text-field
+          v-model="confirmPassword"
+          label="Confirm Password"
+          outlined
+          dense
+          required
+          type="password"
+          class="mb-6"
+          :error-messages="errors.confirmPassword"
+        ></v-text-field>
+
+        <v-btn
+          type="submit"
+          color="pink-darken-1"
+          large
+          block
+        >
+          Sign Up
+        </v-btn>
+      </v-form>
 
       <!-- Sign In Link -->
-      <p class="text-center text-gray-600 text-xs mt-6">
-        Already have an Account? 
-        <router-link to="/login" class="inline-block align-baseline font-bold text-sm text-pink-500 hover:text-pink-800">
+      <p class="text-center text-body-2 mt-6">
+        Already have an Account?
+        <router-link to="/login" class="text-pink-darken-1 font-weight-bold text-decoration-none">
           Sign in
         </router-link>
       </p>
-    </div>
-  </div>
+    </v-card>
+  </v-container>
 </template>
 
 <script setup>
@@ -181,5 +179,5 @@ const handleSignUp = async () => {
 </script>
 
 <style scoped>
-/* Tailwind classes are used for styling, no custom styles needed here */
+/* Vuetify handles most styling, custom styles can be added here if necessary */
 </style>

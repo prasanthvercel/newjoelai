@@ -1,69 +1,74 @@
 <template>
-  <div class="relative min-h-screen bg-gray-100 flex flex-col justify-center items-center overflow-hidden">
-    <!-- Background Wave -->
-    <div class="absolute top-0 left-0 w-full h-1/2 bg-pink-300" style="clip-path: ellipse(100% 55% at 48% 45%);"></div>
+  <v-container fluid class="fill-height d-flex flex-column justify-center align-center">
+    <!-- Background Wave (simplified - Vuetify equivalent or custom if needed) -->
+    <!-- For a simple background color, you can apply it to the container or a parent element -->
+    <!-- For complex shapes like your current wave, you might need custom CSS or an SVG -->
 
-    <div class="relative z-10 bg-white p-8 rounded-lg shadow-md w-full max-w-sm">
-      <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Sign in</h2>
+    <v-card class="pa-8" elevation="2" width="100%" max-width="400">
+      <v-card-title class="text-h5 font-weight-bold text-center mb-6">Sign in</v-card-title>
 
       <!-- Toast Notification -->
-      <div v-if="toast.message" :class="['p-3 mb-4 text-sm rounded-md', toast.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800']" role="alert">
+      <v-alert
+        v-if="toast.message"
+        :type="toast.type"
+        dense
+        closable
+        class="mb-4"
+      >
         {{ toast.message }}
-      </div>
+      </v-alert>
 
-      <form @submit.prevent="handleLogin">
-        <div class="mb-4">
-          <label for="email" class="block text-gray-700 text-sm font-bold mb-2">Email</label>
-          <input
-            type="email"
-            id="email"
-            v-model="email"
-            required
-            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            placeholder="i.e. demo@email.com"
-          />
-        </div>
-        <div class="mb-6">
-          <label for="password" class="block text-gray-700 text-sm font-bold mb-2">Password</label>
-          <input
-            type="password"
-            id="password"
-            v-model="password"
-            required
-            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline"
-            placeholder="Enter your password"
-          />
-          <!-- Forgot Password Link -->
-          <div class="flex justify-between items-center text-sm">
-            <label class="flex items-center">
-              <input type="checkbox" class="form-checkbox">
-              <span class="ml-2 text-gray-600">Remember Me</span>
-            </label>
-             <router-link to="/forgot-password" class="inline-block align-baseline font-bold text-sm text-pink-500 hover:text-pink-800">
-              Forgot Password?
-            </router-link>
-          </div>
+      <v-form @submit.prevent="handleLogin">
+        <v-text-field
+          v-model="email"
+          label="Email"
+          outlined
+          dense
+          required
+          class="mb-4"
+        ></v-text-field>
 
+        <v-text-field
+          v-model="password"
+          label="Password"
+          outlined
+          dense
+          required
+          type="password"
+          class="mb-2"
+        ></v-text-field>
+
+        <!-- Forgot Password and Remember Me -->
+        <div class="d-flex justify-space-between align-center text-caption mb-6">
+          <v-checkbox
+            label="Remember Me"
+            dense
+            hide-details
+          ></v-checkbox>
+          <router-link to="/forgot-password" class="text-pink-darken-1 font-weight-bold text-decoration-none">
+            Forgot Password?
+          </router-link>
         </div>
-        <div class="flex items-center justify-between">
-          <button
-            type="submit"
-            class="bg-pink-500 hover:bg-pink-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full"
-          >
-            Login
-          </button>
-        </div>
-      </form>
+
+        <v-btn
+          type="submit"
+          color="pink-darken-1"
+          large
+          block
+        >
+          Login
+        </v-btn>
+      </v-form>
 
       <!-- Sign Up Link -->
-      <p class="text-center text-gray-600 text-xs mt-6">
-        Don't have an Account? 
-        <router-link to="/signup" class="inline-block align-baseline font-bold text-sm text-pink-500 hover:text-pink-800">
+      <p class="text-center text-body-2 mt-6">
+        Don't have an Account?
+        <router-link to="/signup" class="text-pink-darken-1 font-weight-bold text-decoration-none">
           Sign up
         </router-link>
       </p>
-    </div>
-  </div>
+    </v-card>
+  </v-container>
 </template>
 
 <script setup>
@@ -97,7 +102,7 @@ const handleLogin = async () => {
       password: password.value,
     });
     if (error) throw error;
-    
+
     showToast('Logged in successfully!', 'success');
     router.push('/home'); // Redirect to home page after successful login
   } catch (error) {
@@ -107,5 +112,5 @@ const handleLogin = async () => {
 </script>
 
 <style scoped>
-/* Tailwind classes are used for styling, no custom styles needed here */
+/* Vuetify handles most styling, custom styles can be added here if necessary */
 </style>
