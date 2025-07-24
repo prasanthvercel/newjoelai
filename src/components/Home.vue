@@ -99,6 +99,7 @@ function initSpeechRecognition() {
         recognition.start();
     }
   };
+  
 
   recognition.onend = () => {
     isListening.value = false;
