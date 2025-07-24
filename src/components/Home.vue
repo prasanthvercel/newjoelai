@@ -6,29 +6,42 @@
       class="gradient-circle d-flex justify-center align-center elevation-10"
       :class="{ 'speaking-gradient': isSpeaking, 'listening-gradient': isListening, 'idle-gradient': !isSpeaking && !isListening, 'animate-gradient': isSpeaking }"
     >
-      <!-- Icon inside the circle -->
+      <!-- Icon inside the circle (This icon can still change based on state if you like) -->
       <v-icon size="80" color="white">{{ isSpeaking ? 'mdi-volume-high' : 'mdi-microphone' }}</v-icon>
     </div>
 
     <!-- Bottom Controls -->
     <div class="bottom-controls d-flex justify-center align-center pa-4">
-      <div v-if="!isListening && !isSpeaking">
-        <!-- Microphone icon to start new conversation -->
-        <v-btn icon large @click="startConversation">
-          <v-icon size="48" color="black">mdi-microphone</v-icon>
-        </v-btn>
-      </div>
 
-      <div v-else class="d-flex align-center">
-        <!-- Stop conversation icon -->
-        <v-btn icon large @click="stopConversation" class="mx-4">
-            <v-icon size="48" color="black">mdi-stop-circle</v-icon>
-        </v-btn>
-         <!-- Call end icon (optional, if you want both stop and call end) -->
-         <!-- <v-btn icon large color="error" @click="endCall" class="mx-2">
-            <v-icon size="48">mdi-phone-hangup</v-icon>
-        </v-btn> -->
-      </div>
+      <!-- Microphone button (always visible) -->
+      <v-btn
+        icon
+        large
+        @click="startConversation"
+        :disabled="isListening || isSpeaking"
+        :class="{ 'active-icon': !isListening && !isSpeaking }"
+        class="mx-4"
+      >
+        <v-icon size="48" color="black">mdi-microphone</v-icon>
+      </v-btn>
+
+      <!-- Stop button (always visible) -->
+      <v-btn
+        icon
+        large
+        @click="stopConversation"
+        :disabled="!isListening && !isSpeaking"
+        :class="{ 'active-icon': isListening || isSpeaking }"
+        class="mx-4"
+      >
+        <v-icon size="48" color="black">mdi-stop-circle</v-icon>
+      </v-btn>
+
+      <!-- Optional: Call end icon if needed -->
+      <!-- <v-btn icon large color="error" @click="endCall" class="mx-2">
+          <v-icon size="48">mdi-phone-hangup</v-icon>
+      </v-btn> -->
+
     </div>
 
   </v-container>
@@ -99,8 +112,9 @@ function initSpeechRecognition() {
     console.error('Speech recognition error:', event.error);
     // Handle errors, perhaps display a message or try restarting recognition
      // If an error occurs during continuous listening, you might want to restart
+     // Only restart if not currently speaking to avoid conflicts
     if (!isSpeaking.value) {
-       // recognition.start(); // Auto-restart for continuous
+       // recognition.start(); // Auto-restart for continuous - commented out as handled in speakText/sendToApi
     }
   };
 
@@ -108,9 +122,9 @@ function initSpeechRecognition() {
     isListening.value = false;
     console.log('Speech recognition ended.');
     // Recognition might end unexpectedly, you might want to restart it
-    // if the conversation is still active
+    // if the conversation is still active and not currently speaking
     if (!isSpeaking.value) { // Only restart if not currently speaking
-        // recognition.start(); // Auto-restart for continuous
+        // recognition.start(); // Auto-restart for continuous - commented out as handled in speakText/sendToApi
     }
   };
 }
@@ -138,7 +152,13 @@ function initSpeechSynthesis() {
 }
 
 const speakText = (text) => {
-  if (!synthesis || !text) return;
+  if (!synthesis || !text) {
+    // If speaking fails or no text, try to restart listening
+    if (recognition && !isListening.value) {
+      recognition.start();
+    }
+    return;
+  }
 
   const utterance = new SpeechSynthesisUtterance(text);
    // Attempt to set Indian English voice here as well
@@ -158,7 +178,7 @@ const speakText = (text) => {
       isSpeaking.value = false;
       console.log('Speaking ended.');
        // Speaking ends, go back to listening for continuous conversation
-      if (!isListening.value) { // Prevent double-starting if already listening
+      if (recognition && !isListening.value) { // Check if recognition exists and is not already listening
         recognition.start(); // Auto-restart listening
       }
   };
@@ -168,7 +188,7 @@ const speakText = (text) => {
        console.error('Text-to-speech error:', event.error);
        // Handle speaking errors
        // If speech synthesis fails, you might want to restart listening
-      if (!isListening.value) {
+      if (recognition && !isListening.value) { // Check if recognition exists and is not already listening
          recognition.start(); // Auto-restart listening
       }
   };
@@ -206,7 +226,13 @@ const stopConversation = () => {
 
 // Send recognized speech to OpenAI API
 async function sendToApi(text) {
-    if (!text.trim()) return;
+    if (!text.trim()) {
+        // If no text to send, restart listening
+        if (recognition && !isListening.value) {
+            recognition.start();
+        }
+        return;
+    }
 
     isListening.value = false; // Stop listening while processing and speaking
      // isSpeaking.value = true; // Indicate processing/speaking state - manage in speakText
@@ -247,7 +273,7 @@ async function sendToApi(text) {
          speakText('Sorry, I encountered an error.');
         isSpeaking.value = false; // Ensure speaking state is off on error
          // If API call fails, you might want to go back to listening
-        if (!isListening.value) {
+        if (recognition && !isListening.value) { // Check if recognition exists and is not already listening
             recognition.start(); // Auto-restart listening
         }
     }
@@ -314,6 +340,9 @@ onBeforeUnmount(() => {
   position: absolute;
   bottom: 40px; /* Adjust position as needed */
   width: 100%;
+  display: flex; /* Ensure flexbox for button positioning */
+  justify-content: center; /* Center the buttons */
+  align-items: center;
 }
 
 /* Style for the icon buttons to ensure visibility */
@@ -321,5 +350,18 @@ onBeforeUnmount(() => {
     background-color: rgba(255, 255, 255, 0.9); /* Slightly transparent white background for visibility */
     border-radius: 50%;
     box-shadow: 0 4px 8px rgba(0,0,0,0.3); /* Increased shadow for better contrast */
+    transition: all 0.3s ease; /* Smooth transition for visual changes */
+}
+
+/* Style for disabled buttons */
+.bottom-controls .v-btn:disabled {
+    opacity: 0.5; /* Reduce opacity when disabled */
+    cursor: not-allowed; /* Indicate not clickable */
+}
+
+/* Style for the active icon (highlighting) */
+.active-icon {
+  border: 3px solid #1867c0; /* Example: Add a blue border */
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4); /* Enhance shadow */
 }
 </style>
