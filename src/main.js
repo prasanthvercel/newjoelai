@@ -9,6 +9,12 @@ import ForgotPassword from './components/ForgotPassword.vue';
 import Welcome from './components/Welcome.vue'; // Import the new Welcome component
 import { supabase } from './supabase';
 
+// Import Vuetify
+import 'vuetify/styles'
+import { createVuetify } from 'vuetify'
+import * as components from 'vuetify/components'
+import * as directives from 'vuetify/directives'
+
 const routes = [
   { path: '/signup', component: SignUp },
   { path: '/login', component: Login },
@@ -37,4 +43,11 @@ router.beforeEach(async (to, from, next) => {
   }
 });
 
-createApp(App).use(router).mount('#app');
+// Create Vuetify instance
+const vuetify = createVuetify({
+  components,
+  directives,
+  // Add any desired configuration here (e.g., theme, icons)
+})
+
+createApp(App).use(router).use(vuetify).mount('#app');
