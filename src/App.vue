@@ -7,8 +7,6 @@
         </v-avatar>
         <v-toolbar-title class="ml-3 text-white">Joel Ai</v-toolbar-title>
         <v-spacer></v-spacer>
-        <!-- Navigation links can go here if needed before login -->
-         <!-- Example: Logout button visible after login -->
          <v-btn v-if="isLoggedIn" text @click="handleLogout" color="white">Logout</v-btn>
       </v-container>
     </v-app-bar>
@@ -25,7 +23,7 @@
       </v-btn>
 
       <v-btn value="subscription" to="/subscription">
-        <v-icon>mdi-credit-card-outline</v-icon> <!-- Example icon for subscription -->
+        <v-icon>mdi-credit-card-outline</v-icon>
         <span>Subscription</span>
       </v-btn>
 
@@ -34,6 +32,10 @@
         <span>Profile</span>
       </v-btn>
     </v-bottom-navigation>
+
+     <!-- Temporary display of isLoggedIn state -->
+     <!-- <div>{{ isLoggedIn }}</div> -->
+
   </v-app>
 </template>
 
@@ -47,19 +49,24 @@ const router = useRouter();
 
 // Watch for changes in authentication state and update isLoggedIn
 watchEffect(() => {
+  console.log('watchEffect running');
   const user = supabase.auth.user(); // Or however you get the current user
   isLoggedIn.value = !!user; // isLoggedIn is true if user exists, false otherwise
+  console.log('watchEffect - isLoggedIn:', isLoggedIn.value);
 
   // Optional: Redirect to login if not logged in and not already on a public page
   if (!isLoggedIn.value && router.currentRoute.value.meta.requiresAuth) {
+     console.log('Redirecting to login');
      router.push('/login'); // Adjust login route as needed
   }
 });
 
 // Handle initial auth state on app load
 onMounted(async () => {
+  console.log('onMounted running');
   const user = supabase.auth.user(); // Or however you get the current user
   isLoggedIn.value = !!user;
+  console.log('onMounted - isLoggedIn:', isLoggedIn.value);
 });
 
 const handleLogout = async () => {
