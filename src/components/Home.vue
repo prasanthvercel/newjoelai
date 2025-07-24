@@ -32,6 +32,7 @@ import { ref, onMounted, onBeforeUnmount } from 'vue';
 const isListening = ref(false);
 const isSpeaking = ref(false);
 const currentUtterance = ref('');
+const isProcessing = ref(false); // Flag to track if we are processing a user's input
 
 let recognition = null;
 let synthesis = window.speechSynthesis;
@@ -39,8 +40,9 @@ let synthesis = window.speechSynthesis;
 const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
 const GROQ_API_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
 
+// Updated system message for the AI's persona and behavior
 let history = [
-  { role: 'system', content: 'You are a helpful spoken english assistant who speaks clearly and very brief and short.' }
+  { role: 'system', content: 'You are a friendly, patient, and encouraging English tutor for someone who is learning the language. Assume the user may not be proficient and might speak slowly or make mistakes. Respond with simple, clear sentences of no more than 6 words. Focus on practical, everyday English. Maintain a positive and helpful tone. Avoid slang, complex vocabulary, or lengthy explanations. Do not generate any inappropriate or unethical content.' }
 ];
 
 function initSpeechRecognition() {
@@ -52,6 +54,7 @@ function initSpeechRecognition() {
   recognition.onstart = () => {
     isListening.value = true;
     currentUtterance.value = '';
+    isProcessing.value = false; // Reset processing flag on start
     // Cancel synthesis if it's speaking when recognition starts
     if (synthesis.speaking) {
         synthesis.cancel();
@@ -60,26 +63,27 @@ function initSpeechRecognition() {
   };
 
   recognition.onresult = (event) => {
+    let interimTranscript = '';
     let finalTranscript = '';
+
     for (let i = event.resultIndex; i < event.results.length; ++i) {
-      finalTranscript += event.results[i][0].transcript;
-    }
-    // Display interim transcript for immediate feedback (optional)
-     let interimTranscript = '';
-      for (let i = event.resultIndex; i < event.results.length; ++i) {
-          if (!event.results[i].isFinal) {
-              interimTranscript += event.results[i][0].transcript;
-          }
+      if (event.results[i].isFinal) {
+        finalTranscript += event.results[i][0].transcript;
+      } else {
+        interimTranscript += event.results[i][0].transcript;
       }
-      if (interimTranscript) {
+    }
+
+    // Display interim transcript for immediate feedback (optional)
+     if (interimTranscript) {
           currentUtterance.value = interimTranscript;
       }
 
 
-    if (finalTranscript) {
-      currentUtterance.value = finalTranscript;
-      // Send final transcript to AI and stop listening temporarily
-      recognition.stop(); // Stop recognition while processing/speaking
+    if (finalTranscript && !isProcessing.value) { // Check if it's a final transcript and not currently processing
+      isProcessing.value = true; // Set processing flag
+      currentUtterance.value = finalTranscript; // Display the final transcript
+      console.log('Final transcript received, sending to AI:', finalTranscript);
       sendToAI(finalTranscript);
     }
   };
@@ -87,6 +91,7 @@ function initSpeechRecognition() {
   recognition.onerror = (event) => {
     console.error('Recognition error', event.error);
     isListening.value = false;
+    isProcessing.value = false; // Reset processing flag on error
      // Optionally display an error message to the user
     currentUtterance.value = `Error: ${event.error}`;
     // Attempt to restart recognition after an error
@@ -97,6 +102,7 @@ function initSpeechRecognition() {
 
   recognition.onend = () => {
     isListening.value = false;
+    isProcessing.value = false; // Reset processing flag on end
     console.log('Recognition ended.');
     // If recognition ends unexpectedly during a conversation, restart it
     if (!isSpeaking.value && history.length > 1) { // Check if not speaking and conversation has started
@@ -113,7 +119,7 @@ function startConversation() {
         // Reset history only at the beginning of a new conversation session
         if (history.length <= 1) { // Check if only the system message is in history
              history = [
-                { role: 'system', content: 'You are a helpful assistant who speaks clearly and concisely.' }
+                { role: 'system', content: 'You are a friendly, patient, and encouraging English tutor for someone who is learning the language. Assume the user may not be proficient and might speak slowly or make mistakes. Respond with simple, clear sentences of no more than 6 words. Focus on practical, everyday English. Maintain a positive and helpful tone. Avoid slang, complex vocabulary, or lengthy explanations. Do not generate any inappropriate or unethical content.' }
             ];
         }
         recognition.start();
@@ -129,12 +135,13 @@ function stopConversation() {
     }
     isListening.value = false;
     isSpeaking.value = false;
+    isProcessing.value = false; // Reset processing flag on stop
     currentUtterance.value = '';
     history = []; // Clear history on conversation end
 }
 
 async function sendToAI(text) {
-  isListening.value = false; // Stop listening while processing and speaking
+  // isListening.value = false; // Keep listening while processing/speaking
   isSpeaking.value = false; // Set speaking to false initially
   history.push({ role: 'user', content: text });
 
@@ -158,8 +165,8 @@ async function sendToAI(text) {
   } catch (err) {
     console.error('GROQ API error:', err);
     speakReply('Sorry, I encountered an error.');
-    // If API fails, restart listening to allow the user to try again
-    recognition.start();
+    isProcessing.value = false; // Reset processing flag on API error
+    // If API fails, continuous recognition is still running, no need to restart explicitly here
   }
 }
 
@@ -177,16 +184,16 @@ function speakReply(text) {
   utterance.onend = () => {
     isSpeaking.value = false;
     currentUtterance.value = ''; // Clear utterance after speaking
-    // Restart listening after AI finishes speaking
-    recognition.start();
+    isProcessing.value = false; // Reset processing flag after speaking
+    // Continuous recognition is still running, no need to restart here
   };
 
    utterance.onerror = (event) => {
         isSpeaking.value = false;
         console.error('Speech synthesis error:', event);
         currentUtterance.value = `Speaking Error: ${event.error}`;
-         // If speaking fails, restart listening
-        recognition.start();
+        isProcessing.value = false; // Reset processing flag on speaking error
+         // Continuous recognition is still running, no need to restart here
     };
 
 
